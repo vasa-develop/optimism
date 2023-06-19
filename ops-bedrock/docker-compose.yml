@@ -21,7 +21,6 @@ services:
     volumes:
       - "l1_data:/db"
       - "${PWD}/../.devnet/genesis-l1.json:/genesis.json"
-      - "${PWD}/test-jwt-secret.txt:/config/test-jwt-secret.txt"
 
   l2:
     build:
@@ -34,10 +33,9 @@ services:
       - "l2_data:/db"
       - "${PWD}/../.devnet/genesis-l2.json:/genesis.json"
       - "${PWD}/test-jwt-secret.txt:/config/test-jwt-secret.txt"
-    entrypoint:  # pass the L2 specific flags by overriding the entry-point and adding extra arguments
+    entrypoint:
       - "/bin/sh"
       - "/entrypoint.sh"
-      - "--authrpc.jwtsecret=/config/test-jwt-secret.txt"
 
   op-node:
     depends_on:
