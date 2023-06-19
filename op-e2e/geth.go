@@ -294,6 +294,9 @@ func createGethNode(l2 bool, nodeCfg *node.Config, ethCfg *ethconfig.Config, pri
 		}
 	}
 	ethCfg.NoPruning = true // force everything to be an archive node
+	// A 0 value here would be sanitized to a minRecommitInterval (part of miner pkg -> newWorker function),
+	// but we set it explicitly to avoid warn log + ensure no default recommit interval in case geth init changes.
+	ethCfg.Miner.Recommit = 100 * time.Millisecond
 	n, err := node.New(nodeCfg)
 	if err != nil {
 		n.Close()
