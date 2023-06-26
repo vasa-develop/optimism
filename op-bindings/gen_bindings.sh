@@ -1,8 +1,7 @@
 #/bin/bash
 set -eu
 
-CONTRACTS_PATH="../packages/contracts-bedrock/"
-
+CONTRACTS_PATH="../packages/contracts-bedrock"
 
 if [ "$#" -ne 2 ]; then
 	echo "This script takes 2 arguments - CONTRACT_NAME PACKAGE"
@@ -20,32 +19,28 @@ need_cmd forge
 need_cmd abigen
 
 NAME=$1
-# This can handle both fully qualified syntax or just
-# the name of the contract.
+# This can only handle fully qualified syntax.
 # Fully qualified: path-to-contract-file:contract-name
-TYPE=$(echo "$NAME" | cut -d ':' -f2)
+FULLY_QUALIFIED_PATH=$(echo "$NAME" | cut -d ':' -f1)
+CONTRACT_NAME=$(echo "$NAME" | cut -d ':' -f2)
 PACKAGE=$2
 
 # Convert to lower case to respect golang package naming conventions
-TYPE_LOWER=$(echo ${TYPE} | tr '[:upper:]' '[:lower:]')
-FILENAME="${TYPE_LOWER}_deployed.go"
-
+CONTRACT_NAME_LOWER=$(echo ${CONTRACT_NAME} | tr '[:upper:]' '[:lower:]')
 
 mkdir -p bin
 TEMP=$(mktemp -d)
 
-CWD=$(pwd)
-# Build contracts
-cd ${CONTRACTS_PATH}
-forge inspect ${NAME} abi > ${TEMP}/${TYPE}.abi
-forge inspect ${NAME} bytecode > ${TEMP}/${TYPE}.bin
-forge inspect ${NAME} deployedBytecode > ${CWD}/bin/${TYPE_LOWER}_deployed.hex
+# Pull ABI and bytecode from foundry artifacts.
+ARTIFACT=$(cat ${CONTRACTS_PATH}/forge-artifacts/${CONTRACT_NAME}.sol/${CONTRACT_NAME}.json)
+echo $ARTIFACT | jq '.abi' > ${TEMP}/${CONTRACT_NAME}.abi
+echo $ARTIFACT | jq '.bytecode.object' | tr -d '"' > ${TEMP}/${CONTRACT_NAME}.bin
+echo $ARTIFACT | jq '.deployedBytecode.object' | tr -d '"' > $(pwd)/bin/${CONTRACT_NAME_LOWER}_deployed.hex
 
 # Run ABIGEN
-cd ${CWD}
 abigen \
-	--abi ${TEMP}/${TYPE}.abi \
-	--bin ${TEMP}/${TYPE}.bin \
+	--abi ${TEMP}/${CONTRACT_NAME}.abi \
+	--bin ${TEMP}/${CONTRACT_NAME}.bin \
 	--pkg ${PACKAGE} \
-	--type ${TYPE} \
-	--out ./${PACKAGE}/${TYPE_LOWER}.go
+	--type ${CONTRACT_NAME} \
+	--out ./${PACKAGE}/${CONTRACT_NAME_LOWER}.go

@@ -44,6 +44,7 @@ version:
 compile:
 	cd ../packages/contracts-bedrock/ && \
 		yarn clean && \
+		forge build && \
 		npx hardhat compile
 
 system-config-bindings: compile
@@ -141,7 +142,6 @@ cannon-mips: compile
 
 cannon-preimage-oracle: compile
 	./gen_bindings.sh contracts/cannon/PreimageOracle.sol:PreimageOracle $(pkg)
-
 
 more:
 	go run ./gen/main.go \
