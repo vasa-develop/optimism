@@ -9,10 +9,10 @@
     "dist/*"
   ],
   "scripts": {
-    "start:balance-mon": "ts-node ./src/balance-mon/service.ts",
-    "start:wallet-mon": "ts-node ./src/wallet-mon/service.ts",
-    "start:drippie-mon": "ts-node ./src/drippie-mon/service.ts",
-    "start:wd-mon": "ts-node ./src/wd-mon/service.ts",
+    "start:balance-mon": "tsx ./src/balance-mon/service.ts",
+    "start:wallet-mon": "tsx ./src/wallet-mon/service.ts",
+    "start:drippie-mon": "tsx ./src/drippie-mon/service.ts",
+    "start:wd-mon": "tsx ./src/wd-mon/service.ts",
     "test:coverage": "echo 'No tests defined.'",
     "build": "tsc -p ./tsconfig.json",
     "clean": "rimraf  dist/ ./tsconfig.tsbuildinfo",
@@ -35,17 +35,17 @@
   },
   "dependencies": {
     "@eth-optimism/common-ts": "0.8.2",
-    "@eth-optimism/contracts-periphery": "1.0.8",
     "@eth-optimism/contracts-bedrock": "0.15.0",
+    "@eth-optimism/contracts-periphery": "1.0.8",
     "@eth-optimism/core-utils": "0.12.1",
     "@eth-optimism/sdk": "3.0.0",
-    "ethers": "^5.7.0",
     "@types/dateformat": "^5.0.0",
     "chai-as-promised": "^7.1.1",
-    "dateformat": "^4.5.1"
+    "dateformat": "^4.5.1",
+    "ethers": "^5.7.0"
   },
   "devDependencies": {
     "@ethersproject/abstract-provider": "^5.7.0",
-    "ts-node": "^10.9.1"
+    "tsx": "^3.12.7"
   }
 }
