@@ -36,8 +36,12 @@
   ],
   "scripts": {
     "build": "tsup",
-    "generate": "wagmi generate && pnpm build && pnpm lint:fix",
-    "generate:check": "pnpm generate && git diff --exit-code ./addresses.json && git diff --exit-code ./abis.json",
+    "generate": "pnpm generate:addresses && pnpm generate:wagmi",
+    "generate:check": "pnpm generate:addresses:check && pnpm generate:wagmi:check",
+    "generate:wagmi": "wagmi generate && pnpm build && pnpm lint:fix",
+    "generate:wagmi:check": "pnpm generate && git diff --exit-code ./addresses.json && git diff --exit-code ./abis.json",
+    "generate:addresses": "tsx scripts/generate-addresses.ts",
+    "generate:addresses:check": "tsx scripts/generate-addresses.ts && git diff --exit-code ./addresses.json",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
     "test": "vitest",
@@ -78,6 +82,7 @@
     "@testing-library/react": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "viem": "^1.3.0"
+    "viem": "^1.3.0",
+    "zod": "^3.11.6"
   }
 }

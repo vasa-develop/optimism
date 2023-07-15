@@ -409,10 +409,24 @@ jobs:
           environment:
             FOUNDRY_PROFILE: ci
           working_directory: packages/contracts-bedrock
+
+  contracts-bedrock-check-addresses:
+    docker:
+      - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:latest
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace: { at: "." }
+      - restore_cache:
+          name: Restore pnpm Package Cache
+          keys:
+            - pnpm-packages-v2-{{ checksum "pnpm.lock.yaml" }}
+      - check-changed:
+          patterns: sdk,contracts-bedrock,contracts
       - run:
-          name: Check addresses.json is up to date
-          command: pnpm nx build && pnpm generate:addresses:check
-          working_directory: packages/contracts-bedrock
+          name: Check generated addresses.ts file
+          command: pnpm nx run-many --target=generate:addresses:check
+    
 
   contracts-bedrock-checks:
     docker:
