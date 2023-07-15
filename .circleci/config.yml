@@ -115,6 +115,7 @@ jobs:
           name: Restore PNPM Package Cache
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -128,6 +129,8 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Install dependencies
           command: pnpm install --frozen-lockfile
@@ -341,6 +344,7 @@ jobs:
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
+<<<<<<< HEAD
           patterns: contracts-bedrock
       # TODO remove me after ci builder updated
       - run:
@@ -355,6 +359,9 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+          patterns: contracts-bedrock,hardhat-deploy-config
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: print forge version
           command: forge --version
@@ -384,6 +391,7 @@ jobs:
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
+<<<<<<< HEAD
           patterns: contracts-bedrock
       # TODO remove me after ci builder updated
       - run:
@@ -398,6 +406,9 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+          patterns: contracts-bedrock,hardhat-deploy-config
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: print forge version
           command: forge --version
@@ -420,6 +431,7 @@ jobs:
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
+<<<<<<< HEAD
           patterns: contracts-bedrock
       # TODO remove me after ci builder updated
       - run:
@@ -434,6 +446,9 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+          patterns: contracts-bedrock,hardhat-deploy-config
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: lint
           command: |
@@ -505,6 +520,7 @@ jobs:
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
+<<<<<<< HEAD
           patterns: contracts-bedrock
       # TODO remove me after ci builder updated
       - run:
@@ -519,6 +535,9 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+          patterns: contracts-bedrock,hardhat-deploy-config
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: slither
           command: |
@@ -539,6 +558,7 @@ jobs:
           keys:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
+<<<<<<< HEAD
           patterns: contracts-bedrock
       # TODO remove me after ci builder updated
       - run:
@@ -553,6 +573,9 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+          patterns: contracts-bedrock,hardhat-deploy-config
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: validate spacers
           command: pnpm validate-spacers
@@ -566,6 +589,7 @@ jobs:
       - attach_workspace: { at: "." }
       - check-changed:
           patterns: contracts-bedrock,contracts
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -579,6 +603,8 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Compile with metadata hash
           command: pnpm clean && pnpm build:with-metadata
@@ -610,6 +636,7 @@ jobs:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
           patterns: contracts-bedrock,contracts
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -623,6 +650,8 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Echidna Fuzz <<parameters.echidna_target>>
           command: pnpm echidna:<<parameters.echidna_target>>
@@ -642,6 +671,7 @@ jobs:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
           patterns: contracts-bedrock,op-bindings
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -655,6 +685,8 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: check go bindings
           command: make && git diff --exit-code
@@ -684,6 +716,7 @@ jobs:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
           patterns: <<parameters.package_name>>,<<parameters.dependencies>>
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -697,6 +730,8 @@ jobs:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Lint
           command: pnpm lint && git diff --exit-code
@@ -766,15 +801,17 @@ jobs:
       - checkout
       - check-changed:
           patterns: specs/(.*)\.md$
-      # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
           command: |
             npm i pnpm --global
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       # A github dep clones-with-immutable-args is installed via github
       # packages installed via npm via github automatically run postpack scripts
       # their postpack script happens to use yarn so we need it here
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Install yarn package manager
           command: |
@@ -799,6 +836,10 @@ jobs:
           name: Install pnpm package manager
           command: |
             npm i pnpm --global
+      - run:
+          name: Install yarn package manager
+          command: |
+            npm i yarn@1 --global
       - run:
           name: Install node_modules
           command: |
@@ -852,6 +893,7 @@ jobs:
             - pnpm-packages-v2-{{ checksum "pnpm-lock.yaml" }}
       - check-changed:
           patterns: packages
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       - run:
           name: Install pnpm package manager
@@ -861,20 +903,35 @@ jobs:
       # A github dep clones-with-immutable-args is installed via github
       # packages installed via npm via github automatically run postpack scripts
       # their postpack script happens to use yarn so we need it here
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Install yarn package manager
           command: |
             npm i yarn@1 --global
-      # Note: The below needs to be manually configured whenever we
-      # add a new package to CI.
+      # TODO Don't add to this list just replace this with a command like this with pnpm or nx (pseudocode) `pnpm run depcheck --recursively --max-amount-of-parallels=1`
+      # consider adding package.json as the only dep to this and then nx would be smart enough to cache result anytime package.json changes
       - run:
           name: Check common-ts
           command: npx depcheck
           working_directory: packages/common-ts
+      # TODO Don't add to this list just replace this with a command like this with pnpm or nx (pseudocode) `pnpm run depcheck --recursively --max-amount-of-parallels=1`
+      # consider adding package.json as the only dep to this and then nx would be smart enough to cache result anytime package.json changes
       - run:
+<<<<<<< HEAD
+=======
+          name: Check contracts-periphery
+          command: npx depcheck
+          working_directory: packages/contracts-periphery
+      # TODO Don't add to this list just replace this with a command like this with pnpm or nx (pseudocode) `pnpm run depcheck --recursively --max-amount-of-parallels=1`
+      # consider adding package.json as the only dep to this and then nx would be smart enough to cache result anytime package.json changes
+      - run:
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
           name: Check core-utils
           command: npx depcheck
           working_directory: packages/core-utils
+      # TODO Don't add to this list just replace this with a command like this with pnpm or nx (pseudocode) `pnpm run depcheck --recursively --max-amount-of-parallels=1`
+      # consider adding package.json as the only dep to this and then nx would be smart enough to cache result anytime package.json changes
       - run:
           name: Check sdk
           command: npx depcheck
@@ -1037,10 +1094,13 @@ jobs:
           command: |
             nvm install
             nvm use && node --version && npm --version
+<<<<<<< HEAD
       # TODO remove me after ci builder updated
       # A github dep clones-with-immutable-args is installed via github
       # packages installed via npm via github automatically run postpack scripts
       # their postpack script happens to use yarn so we need it here
+=======
+>>>>>>> 925bc305f (chore: remove unnecessary yarn and pnpm in circle config)
       - run:
           name: Install Package managers
           command: |
