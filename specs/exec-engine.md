@@ -16,6 +16,7 @@
     - [Extended PayloadAttributesV1](#extended-payloadattributesv1)
   - [`engine_newPayloadV1`](#engine_newpayloadv1)
   - [`engine_getPayloadV1`](#engine_getpayloadv1)
+  - [`engine_signalOPStackVersionV1`](#engine_signalopstackversionv1)
 - [Networking](#networking)
 - [Sync](#sync)
   - [Happy-path sync](#happy-path-sync)
@@ -197,6 +198,36 @@ Applies a L2 block to the engine state.
 
 No modifications to [`engine_getPayloadV1`][engine_getPayloadV1].
 Retrieves a payload by ID, prepared by `engine_forkchoiceUpdatedV1` when called with `payloadAttributes`.
+
+### `engine_signalOPStackVersionV1`
+
+Optional extension to the Engine API. Signals to the Engine which Protocol Version is recommended and required.
+
+Types:
+
+```javascript
+OPStackVersionSignal: {
+    recommended: ProtocolVersion
+    required: ProtocolVersion
+}
+```
+
+`ProtocolVersion`: encoded for RPC as defined in
+[Protocol Version format specification](./superchain-upgrades.md#protocol-version-format).
+
+Parameters:
+
+- `signal`: `OPStackVersionSignal`, the recommended and required protocol versions.
+
+Returns:
+
+- `ProtocolVersion`: the latest supported OP-Stack protocol version of the execution engine.
+
+The execution engine SHOULD warn the user when the recommended version is newer than
+the current version supported by the execution engine.
+
+The execution engine SHOULD take safety precautions if it does not meet the required protocol version.
+This may include halting the engine, with consent of the execution engine operator.
 
 ## Networking
 
