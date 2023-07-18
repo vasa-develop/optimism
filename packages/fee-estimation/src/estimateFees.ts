@@ -34,13 +34,13 @@ type BlockOptions = {
 }
 
 /**
- * ProviderOptions type
- * @typedef {Object} ProviderOptions
+ * ClientOptions type
+ * @typedef {Object} ClientOptions
  * @property {keyof typeof gasPriceOracleAddress | number} chainId - Chain ID
  * @property {string} [rpcUrl] - RPC URL. If not provided the provider will attempt to use public RPC URLs for the chain
  * @property {chains.Chain['nativeCurrency']} [nativeCurrency] - Native currency. Defaults to ETH
  */
-type ProviderOptions =
+type ClientOptions =
   | {
     chainId: keyof typeof gasPriceOracleAddress
     rpcUrl?: string
@@ -51,11 +51,13 @@ type ProviderOptions =
     rpcUrl: string
     nativeCurrency?: chains.Chain['nativeCurrency']
   }
-
+  | {
+    viemClient: PublicClient
+  }
 /**
  * Options for all GasPriceOracle methods
  */
-export type GasPriceOracleOptions = BlockOptions & ProviderOptions
+export type GasPriceOracleOptions = BlockOptions & ClientOptions
 
 /**
  * Throws an error if fetch is not defined
@@ -74,27 +76,28 @@ const validateFetch = () => {
  * @example
  * const client = getL2Client({ chainId: 1, rpcUrl: "http://localhost:8545" });
  */
-export const getL2Client = ({
-  chainId,
-  rpcUrl,
-  nativeCurrency,
-}: ProviderOptions): PublicClient => {
+export const getL2Client = (options: ClientOptions): PublicClient => {
   validateFetch()
-  const viemChain = Object.values(chains)?.find((chain) => chain.id === chainId)
-  const rpcUrls = rpcUrl
-    ? { default: { http: [rpcUrl] }, public: { http: [rpcUrl] } }
+
+  if ('viemClient' in options) {
+    return options.viemClient
+  }
+
+  const viemChain = Object.values(chains)?.find((chain) => chain.id === options.chainId)
+  const rpcUrls = options.rpcUrl
+    ? { default: { http: [options.rpcUrl] }, public: { http: [options.rpcUrl] } }
     : viemChain?.rpcUrls
   if (!rpcUrls) {
     throw new Error(
-      `No rpcUrls found for chainId ${chainId}.  Please explicitly provide one`
+      `No rpcUrls found for chainId ${options.chainId}.  Please explicitly provide one`
     )
   }
   return createPublicClient({
     chain: {
-      id: chainId,
+      id: options.chainId,
       name: viemChain?.name ?? 'op-chain',
       nativeCurrency:
-        nativeCurrency ??
+        options.nativeCurrency ??
         viemChain?.nativeCurrency ??
         chains.optimism.nativeCurrency,
       network: viemChain?.network ?? 'Unknown OP Chain',
@@ -103,14 +106,14 @@ export const getL2Client = ({
         (viemChain as typeof chains.optimism)?.blockExplorers ??
         chains.optimism.blockExplorers,
     },
-    transport: http(rpcUrl ?? chains[chainId].rpcUrls.public.http[0]),
+    transport: http(options.rpcUrl ?? chains[options.chainId].rpcUrls.public.http[0]),
   })
 }
 
 /**
  * Get gas price Oracle contract
  */
-export const getGasPriceOracleContract = (params: ProviderOptions) => {
+export const getGasPriceOracleContract = (params: ClientOptions) => {
   return getContract({
     address: gasPriceOracleAddress['420'],
     abi: gasPriceOracleABI,
@@ -250,30 +253,27 @@ export type EstimateFeeParams = {
 /**
  * Estimates gas for an L2 transaction including the l1 fee
  */
-export const estimateFees = async ({
-  blockNumber,
-  data,
-  chainId,
-  rpcUrl,
-  nativeCurrency,
-  blockTag,
-  ...viemParams
-}: EstimateFeeParams) => {
-  const provider = getL2Client({ chainId, rpcUrl: rpcUrl as string, nativeCurrency })
+export const estimateFees = async ({ blockNumber, data, account, to, gas, nonce, value, blockTag, gasPrice, accessList, maxFeePerGas, maxPriorityFeePerGas, ...clientOptions }: EstimateFeeParams) => {
+  const client = getL2Client(clientOptions)
   const [l2Fee, l1Fee] = await Promise.all([
-    provider.estimateGas({
+    client.estimateGas({
       // viem has really strict types and this as undefined is a hack to get around it
       blockNumber: blockNumber as undefined,
       blockTag,
       data,
-      ...viemParams
+      account,
+      to,
+      gas,
+      nonce,
+      value,
+      gasPrice,
+      accessList,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
     }),
     getL1Fee(data, {
       blockNumber,
-      chainId,
-      rpcUrl: rpcUrl as string,
-      nativeCurrency,
-      blockTag,
+      ...clientOptions,
     }),
   ])
   return l1Fee + l2Fee

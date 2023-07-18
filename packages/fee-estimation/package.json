@@ -26,9 +26,9 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@eth-optimism/contracts-ts": "workspace:^",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react-hooks": "^8.0.1",
-    "@eth-optimism/contracts-ts": "workspace:^",
     "@vitest/coverage-istanbul": "^0.33.0",
     "abitype": "^0.9.0",
     "isomorphic-fetch": "^3.0.0",
