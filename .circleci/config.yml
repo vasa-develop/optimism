@@ -706,8 +706,6 @@ jobs:
           name: Test
           command: pnpm test:coverage
           working_directory: packages/<<parameters.package_name>>
-          # env variables
-          
       - run:
           name: Upload coverage
           command: codecov --verbose --clean --flags <<parameters.coverage_flag>>

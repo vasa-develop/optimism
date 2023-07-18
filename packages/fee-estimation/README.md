@@ -1,8 +1,8 @@
-# GasEstimation Documentation
+# @eth-optiism/fee-estimation Documentation
 
 ## Why
 
-Gas estimation on OP-chains has both an l2 and l1 component. By default tools such as Viem, Wagmi, Ethers, and Web3.js do not support the l1 component. They will support this soon but in meantime this library can help estimate fees for transactions.
+Fee estimation on OP-chains has both an l2 and l1 component. By default tools such as Viem, Wagmi, Ethers, and Web3.js do not support the l1 component. They will support this soon but in meantime, this library can help estimate fees for transactions, or act as a reference.
 As these tools add support for gas estimation natively this README will be updated with framework specific instructions.
 
 ## High level
