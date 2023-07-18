@@ -9,12 +9,15 @@ import {
   BlockTag,
   Address,
   EstimateGasParameters,
-  encodeFunctionData
+  serializeTransaction,
+  encodeFunctionData,
+  EncodeFunctionDataParameters,
+  TransactionSerializableEIP1559,
+  TransactionSerializedEIP1559
 } from 'viem'
 import * as chains from 'viem/chains'
 import { PublicClient } from 'wagmi'
-
-export { encodeFunctionData }
+import { Abi } from 'abitype'
 
 /**
  * Bytes type representing a hex string with a 0x prefix
@@ -64,17 +67,44 @@ type ClientOptions =
  */
 export type GasPriceOracleOptions = BlockOptions & { client: ClientOptions }
 
+/**
+ * Options for specifying the transaction being estimated
+ */
+export type OracleTransactionParameters<TAbi extends Abi | readonly unknown[], TFunctionName extends string | undefined = undefined> = EncodeFunctionDataParameters<TAbi, TFunctionName> & Omit<TransactionSerializableEIP1559, 'data' | 'type'>
+/**
+ * Options for specifying the transaction being estimated
+ */
+export type GasPriceOracleEstimator = <
+  TAbi extends Abi | readonly unknown[],
+  TFunctionName extends string | undefined = undefined,
+>(options: OracleTransactionParameters<TAbi, TFunctionName> & GasPriceOracleOptions) => Promise<bigint>
 
 /**
  * Throws an error if fetch is not defined
  * Viem requires fetch
  */
-const validateFetch = () => {
+const validateFetch = (): void => {
   if (typeof fetch === 'undefined') {
     throw new Error(
       'No fetch implementation found. Please provide a fetch polyfill. This can be done in NODE by passing in NODE_OPTIONS=--experimental-fetch or by using the isomorphic-fetch npm package'
     )
   }
+}
+
+/**
+ * Internal helper to serialize a transaction
+ */
+const transactionSerializer = <
+  TAbi extends Abi | readonly unknown[],
+  TFunctionName extends string | undefined = undefined,
+>(options: EncodeFunctionDataParameters<TAbi, TFunctionName> & Omit<TransactionSerializableEIP1559, 'data'>): TransactionSerializedEIP1559 => {
+  const encodedFunctionData = encodeFunctionData(options)
+  const serializedTransaction = serializeTransaction({
+    ...options,
+    data: encodedFunctionData,
+    type: 'eip1559'
+  })
+  return serializedTransaction as TransactionSerializedEIP1559
 }
 
 /**
@@ -133,10 +163,10 @@ export const getGasPriceOracleContract = (params: ClientOptions) => {
  * const baseFeeValue = await baseFee(params);
  */
 export const baseFee = async (
-  { client, ...params }: GasPriceOracleOptions
+  { client, blockNumber, blockTag}: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.baseFee(params)
+  return contract.read.baseFee({blockNumber, blockTag})
 }
 
 /**
@@ -145,10 +175,10 @@ export const baseFee = async (
  * const decimalsValue = await decimals(params);
  */
 export const decimals = async (
-  { client, ...params }: GasPriceOracleOptions
+  { client, blockNumber, blockTag}: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.decimals(params)
+  return contract.read.decimals({blockNumber, blockTag})
 }
 
 /**
@@ -157,10 +187,10 @@ export const decimals = async (
  * const gasPriceValue = await gasPrice(params);
  */
 export const gasPrice = async (
-  { client, ...params }: GasPriceOracleOptions
+  { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.gasPrice(params)
+  return contract.read.gasPrice({blockNumber, blockTag})
 }
 
 /**
@@ -169,30 +199,30 @@ export const gasPrice = async (
  * @example
  * const L1FeeValue = await getL1Fee(data, params);
  */
-export const getL1Fee = async (
-  data: Bytes,
-  { client, ...params }: GasPriceOracleOptions
-): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(client)
-  return contract.read.getL1Fee([data], params)
+export const getL1Fee: GasPriceOracleEstimator = async (
+  options
+) => {
+  const data = transactionSerializer(options)
+  const contract = getGasPriceOracleContract(options.client)
+  return contract.read.getL1Fee([data], {
+    blockNumber: options.blockNumber,
+    blockTag: options.blockTag,
+  })
 }
 
 /**
  * Returns the L1 gas used
  * @example
  */
-export const getL1GasUsed = async (
-  /**
-   * The transaction call data as a 0x-prefixed hex string
-   */
-  data: Bytes,
-  /**
-   * Optional lock options and provider options
-   */
-  { client, ...params }: GasPriceOracleOptions
-): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(client)
-  return contract.read.getL1GasUsed([data], params)
+export const getL1GasUsed: GasPriceOracleEstimator = async (
+  options
+) => {
+  const data = transactionSerializer(options)
+  const contract = getGasPriceOracleContract(options.client)
+  return contract.read.getL1GasUsed([data], {
+    blockNumber: options.blockNumber,
+    blockTag: options.blockTag,
+  })
 }
 
 /**
@@ -201,11 +231,11 @@ export const getL1GasUsed = async (
  * const L1BaseFeeValue = await l1BaseFee(params);
  */
 export const l1BaseFee = async (
-  { client, ...params }: GasPriceOracleOptions
+  { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.l1BaseFee(params)
-}
+  return contract.read.l1BaseFee({blockNumber, blockTag})
+} 
 
 /**
  * Returns the overhead
@@ -213,10 +243,10 @@ export const l1BaseFee = async (
  * const overheadValue = await overhead(params);
  */
 export const overhead = async (
-  { client, ...params }: GasPriceOracleOptions
+  { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.overhead(params)
+  return contract.read.overhead({blockNumber, blockTag})
 }
 
 /**
@@ -255,32 +285,26 @@ export type EstimateFeeParams = {
 } & GasPriceOracleOptions &
   Omit<EstimateGasParameters, 'data' | 'account'>
 
+export type EstimateFees = <
+  TAbi extends Abi | readonly unknown[],
+  TFunctionName extends string | undefined = undefined,
+>(options: OracleTransactionParameters<TAbi, TFunctionName> & GasPriceOracleOptions & Omit<EstimateGasParameters, 'data'>) => Promise<bigint>
 /**
  * Estimates gas for an L2 transaction including the l1 fee
  */
-export const estimateFees = async ({ blockNumber, data, account, to, gas, nonce, value, blockTag, gasPrice, accessList, maxFeePerGas, maxPriorityFeePerGas, client: clientOptions }: EstimateFeeParams) => {
-  const client = getL2Client(clientOptions)
-  const [l2Fee, l1Fee] = await Promise.all([
+export const estimateFees: EstimateFees = async (options) => {
+  const client = getL2Client(options.client)
+  const encodedFunctionData = encodeFunctionData(options)
+  const [l1Fee, l2Fee] = await Promise.all([
+    getL1Fee({
+      ...options,
+      // account must be undefined or else viem will return undefined
+      account: undefined as any,
+    }),
     client.estimateGas({
-      // viem has really strict types and this as undefined is a hack to get around it
-      blockNumber: blockNumber as undefined,
-      blockTag,
-      data,
-      account,
-      to,
-      gas,
-      nonce,
-      value,
-      gasPrice,
-      accessList,
-      maxFeePerGas,
-      maxPriorityFeePerGas,
-    }),
-    getL1Fee(data, {
-      client,
-      blockNumber,
-      ...clientOptions,
-    }),
+      ...options,
+      data: encodedFunctionData,
+    } as EstimateGasParameters<typeof chains.optimism>),
   ])
   return l1Fee + l2Fee
 }

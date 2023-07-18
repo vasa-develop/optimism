@@ -15,18 +15,31 @@ import {
   overhead,
   scalar,
   version,
-  encodeFunctionData
 } from './estimateFees'
 import { optimistABI, optimistAddress } from '@eth-optimism/contracts-ts'
+import { parseGwei } from 'viem'
 
-// https://optimistic.etherscan.io/tx/0xceb34708f1de2ea2336dbdd81ca2cb7b12ec2ab6adc86a0d7d81c8c4416f81bb
-const data =
-  '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1'
-const blockNumber = BigInt(106889079)
+// using this optimist https://optimistic.etherscan.io/tx/0xaa291efba7ea40b0742e5ff84a1e7831a2eb6c2fc35001fa03ba80fd3b609dc9
+const blockNumber = BigInt(107028270)
+const optimistOwnerAddress = "0x77194aa25a06f932c10c0f25090f3046af2c85a6" as const
+const functionCallData = {
+  functionName: 'burn',
+  // this is an erc721 abi
+  abi: optimistABI,
+  args: [BigInt(optimistOwnerAddress)],
+  account: optimistOwnerAddress,
+  to: optimistAddress[10],
+  chainId: 10
+} as const
 
+const callDataWithPriorityFees = {
+  ...functionCallData,
+  maxFeePerGas:parseGwei('2'),
+  maxPriorityFeePerGas: parseGwei('2'),
+}
 
 const clientParams = {
-  chainId: 10,
+  chainId: functionCallData.chainId,
   rpcUrl: process.env.VITE_L2_RPC_URL ?? 'https://mainnet.optimism.io',
 } as const
 
@@ -34,58 +47,38 @@ const viemClient = getL2Client(clientParams)
 
 const paramsWithRpcUrl = {
   client: clientParams,
-  blockNumber
-}
+  blockNumber,
+} as const
 
 const paramsWithViemClient = {
   client: viemClient,
   viemClient,
-  blockNumber
-}
+  blockNumber,
+} as const
 
 beforeEach(() => {
   vi.resetAllMocks()
 })
 
 test('estimateFees should return correct fees', async () => {
-  const estimateFeesParams = {
-    data:
-      '0xd1e16f0a603acf1f8150e020434b096e408bafa429a7134fbdad2ae82a9b2b882bfcf5fe174162cf4b3d5f2ab46ff6433792fc99885d55ce0972d982583cc1e11b64b1d8d50121c0497642000000000000000000000000000000000000060a2c8052ed420000000000000000000000000000000000004234002c8052edba12222222228d8ba445958a75a0704d566bf2c84200000000000000000000000000000000000006420000000000000000000000000000000000004239965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003',
-    account: '0xe371815c5f8a4f9acd1576879de288acd81269f1',
-    to: '0xe35f24470730f5a488da9721548c1ab0b65b53d5',
-  } as const
-  const res = await estimateFees({ ...paramsWithRpcUrl, ...estimateFeesParams })
-  expect(res).toMatchInlineSnapshot('33237088573005n')
-  expect(await estimateFees({ ...paramsWithViemClient, ...estimateFeesParams })).toMatchInlineSnapshot('33237088573005n')
-  expect(formatEther(res)).toMatchInlineSnapshot('"0.000033237088573005"')
-})
-
-test('users should be able to generate data using encodeFunctionData', async () => {
-  // using this optimist https://optimistic.etherscan.io/tx/0xaa291efba7ea40b0742e5ff84a1e7831a2eb6c2fc35001fa03ba80fd3b609dc9
-  const blockNumber = BigInt(107028270)
-  const optimistOwnerAddress = "0x77194aa25a06f932c10c0f25090f3046af2c85a6" as const
-  const client = getL2Client(clientParams)
-  const data = encodeFunctionData({
-    // not sure why you would estimate gas of ownerOf but this is just an example
-    functionName: 'burn',
-    // this is an erc721 abi
-    abi: optimistABI,
-    args: [BigInt(optimistOwnerAddress)],
-  })
-  expect(data).toMatchInlineSnapshot('"0x42966c6800000000000000000000000077194aa25a06f932c10c0f25090f3046af2c85a6"')
-  const res = await estimateFees({
-    client,
-    data,
-    account: optimistOwnerAddress,
-    to: optimistAddress[10],
-    blockNumber
-  })
-  expect(res).toMatchInlineSnapshot('15828378580466n')
+  const res = await estimateFees({ ...paramsWithRpcUrl, ...functionCallData })
+  expect(res).toMatchInlineSnapshot('20573185261089n')
+  expect(await estimateFees({ ...paramsWithRpcUrl, ...functionCallData })).toMatchInlineSnapshot('20573185261089n')
+  expect(await estimateFees({ ...paramsWithRpcUrl, ...functionCallData })).toMatchInlineSnapshot('20573185261089n')
+  expect(await estimateFees({ ...paramsWithRpcUrl, ...functionCallData })).toMatchInlineSnapshot('20573185261089n')
+  expect(formatEther(res)).toMatchInlineSnapshot('"0.000020573185261089"')
+  // what is the l2 and l1 part of the fees for reference?
+  const l1Fee = await getL1Fee({ ...paramsWithRpcUrl, ...functionCallData })
+  const l2Fee = res - l1Fee
+  expect(l1Fee).toMatchInlineSnapshot('20573185216764n')
+  expect(formatEther(l1Fee)).toMatchInlineSnapshot('"0.000020573185216764"')
+  expect(l2Fee).toMatchInlineSnapshot('44325n')
+  expect(formatEther(l2Fee)).toMatchInlineSnapshot('"0.000000000000044325"')
 })
 
 test('baseFee should return the correct result', async () => {
-  expect(await baseFee(paramsWithRpcUrl)).toMatchInlineSnapshot('65n')
-  expect(await baseFee(paramsWithViemClient)).toMatchInlineSnapshot('65n')
+  expect(await baseFee(paramsWithRpcUrl)).toMatchInlineSnapshot('64n')
+  expect(await baseFee(paramsWithViemClient)).toMatchInlineSnapshot('64n')
 })
 
 test('decimals should return the correct result', async () => {
@@ -94,23 +87,26 @@ test('decimals should return the correct result', async () => {
 })
 
 test('gasPrice should return the correct result', async () => {
-  expect(await gasPrice(paramsWithRpcUrl)).toMatchInlineSnapshot('65n')
-  expect(await gasPrice(paramsWithViemClient)).toMatchInlineSnapshot('65n')
+  expect(await gasPrice(paramsWithRpcUrl)).toMatchInlineSnapshot('64n')
+  expect(await gasPrice(paramsWithViemClient)).toMatchInlineSnapshot('64n')
 })
 
 test('getL1Fee should return the correct result', async () => {
-  expect(await getL1Fee(data, paramsWithRpcUrl)).toMatchInlineSnapshot('15130316373984n')
-  expect(await getL1Fee(data, paramsWithViemClient)).toMatchInlineSnapshot('15130316373984n')
+  expect(await getL1Fee({ ...paramsWithRpcUrl, ...functionCallData })).toMatchInlineSnapshot('20573185216764n')
+  expect(await getL1Fee({ ...paramsWithViemClient, ...functionCallData })).toMatchInlineSnapshot('20573185216764n')
+  expect(await getL1Fee({ ...paramsWithViemClient, ...callDataWithPriorityFees })).toMatchInlineSnapshot('21536974073765n')
+  expect(formatEther(await getL1Fee({ ...paramsWithViemClient, ...functionCallData }))).toMatchInlineSnapshot('"0.000020573185216764"')
 })
 
 test('getL1GasUsed should return the correct result', async () => {
-  expect(await getL1GasUsed(data, paramsWithRpcUrl)).toMatchInlineSnapshot('1708n')
-  expect(await getL1GasUsed(data, paramsWithViemClient)).toMatchInlineSnapshot('1708n')
+  expect(await getL1GasUsed({ ...paramsWithRpcUrl, ...functionCallData })).toMatchInlineSnapshot('2220n')
+  expect(await getL1GasUsed({ ...paramsWithViemClient, ...functionCallData })).toMatchInlineSnapshot('2220n')
+  expect(await getL1GasUsed({ ...paramsWithViemClient, ...callDataWithPriorityFees })).toMatchInlineSnapshot('2324n')
 })
 
 test('l1BaseFee should return the correct result', async () => {
-  expect(await l1BaseFee(paramsWithRpcUrl)).toMatchInlineSnapshot('12951022000n')
-  expect(await l1BaseFee(paramsWithViemClient)).toMatchInlineSnapshot('12951022000n')
+  expect(await l1BaseFee(paramsWithRpcUrl)).toMatchInlineSnapshot('13548538813n')
+  expect(await l1BaseFee(paramsWithViemClient)).toMatchInlineSnapshot('13548538813n')
 })
 
 test('overhead should return the correct result', async () => {
