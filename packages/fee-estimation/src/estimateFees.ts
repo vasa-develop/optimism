@@ -13,11 +13,13 @@ import {
   encodeFunctionData,
   EncodeFunctionDataParameters,
   TransactionSerializableEIP1559,
-  TransactionSerializedEIP1559
+  TransactionSerializedEIP1559,
+  stringify
 } from 'viem'
 import * as chains from 'viem/chains'
 import { PublicClient } from 'wagmi'
 import { Abi } from 'abitype'
+import { writeFileSync } from 'fs'
 
 /**
  * Bytes type representing a hex string with a 0x prefix
@@ -163,10 +165,10 @@ export const getGasPriceOracleContract = (params: ClientOptions) => {
  * const baseFeeValue = await baseFee(params);
  */
 export const baseFee = async (
-  { client, blockNumber, blockTag}: GasPriceOracleOptions
+  { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.baseFee({blockNumber, blockTag})
+  return contract.read.baseFee({ blockNumber, blockTag })
 }
 
 /**
@@ -175,10 +177,10 @@ export const baseFee = async (
  * const decimalsValue = await decimals(params);
  */
 export const decimals = async (
-  { client, blockNumber, blockTag}: GasPriceOracleOptions
+  { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.decimals({blockNumber, blockTag})
+  return contract.read.decimals({ blockNumber, blockTag })
 }
 
 /**
@@ -190,7 +192,7 @@ export const gasPrice = async (
   { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.gasPrice({blockNumber, blockTag})
+  return contract.read.gasPrice({ blockNumber, blockTag })
 }
 
 /**
@@ -234,8 +236,8 @@ export const l1BaseFee = async (
   { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.l1BaseFee({blockNumber, blockTag})
-} 
+  return contract.read.l1BaseFee({ blockNumber, blockTag })
+}
 
 /**
  * Returns the overhead
@@ -246,7 +248,7 @@ export const overhead = async (
   { client, blockNumber, blockTag }: GasPriceOracleOptions
 ): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
-  return contract.read.overhead({blockNumber, blockTag})
+  return contract.read.overhead({ blockNumber, blockTag })
 }
 
 /**
@@ -294,7 +296,22 @@ export type EstimateFees = <
  */
 export const estimateFees: EstimateFees = async (options) => {
   const client = getL2Client(options.client)
-  const encodedFunctionData = encodeFunctionData(options)
+  const encodedFunctionData = encodeFunctionData({
+    abi: options.abi,
+    args: options.args,
+    functionName: options.functionName,
+  } as EncodeFunctionDataParameters)
+  writeFileSync('./repro', stringify(
+    {
+      to: options.to,
+      account: options.account,
+      accessList: options.accessList,
+      blockNumber: options.blockNumber,
+      blockTag: options.blockTag,
+      data: encodedFunctionData,
+      value: options.value,
+    } as EstimateGasParameters<typeof chains.optimism>, null, 2
+  ))
   const [l1Fee, l2Fee] = await Promise.all([
     getL1Fee({
       ...options,
@@ -302,8 +319,13 @@ export const estimateFees: EstimateFees = async (options) => {
       account: undefined as any,
     }),
     client.estimateGas({
-      ...options,
+      to: options.to,
+      account: options.account,
+      accessList: options.accessList,
+      blockNumber: options.blockNumber,
+      blockTag: options.blockTag,
       data: encodedFunctionData,
+      value: options.value,
     } as EstimateGasParameters<typeof chains.optimism>),
   ])
   return l1Fee + l2Fee
