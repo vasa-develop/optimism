@@ -9,9 +9,12 @@ import {
   BlockTag,
   Address,
   EstimateGasParameters,
+  encodeFunctionData
 } from 'viem'
 import * as chains from 'viem/chains'
 import { PublicClient } from 'wagmi'
+
+export { encodeFunctionData }
 
 /**
  * Bytes type representing a hex string with a 0x prefix
@@ -33,6 +36,8 @@ type BlockOptions = {
   blockTag?: BlockTag
 }
 
+const knownChains = [chains.optimism.id, chains.goerli.id, chains.baseGoerli.id]
+
 /**
  * ClientOptions type
  * @typedef {Object} ClientOptions
@@ -41,8 +46,9 @@ type BlockOptions = {
  * @property {chains.Chain['nativeCurrency']} [nativeCurrency] - Native currency. Defaults to ETH
  */
 type ClientOptions =
+  // for known chains like base don't require an rpcUrl
   | {
-    chainId: keyof typeof gasPriceOracleAddress
+    chainId: (typeof knownChains)[number]
     rpcUrl?: string
     nativeCurrency?: chains.Chain['nativeCurrency']
   }
@@ -51,13 +57,13 @@ type ClientOptions =
     rpcUrl: string
     nativeCurrency?: chains.Chain['nativeCurrency']
   }
-  | {
-    viemClient: PublicClient
-  }
+  | PublicClient
+
 /**
  * Options for all GasPriceOracle methods
  */
-export type GasPriceOracleOptions = BlockOptions & ClientOptions
+export type GasPriceOracleOptions = BlockOptions & { client: ClientOptions }
+
 
 /**
  * Throws an error if fetch is not defined
@@ -79,35 +85,34 @@ const validateFetch = () => {
 export const getL2Client = (options: ClientOptions): PublicClient => {
   validateFetch()
 
-  if ('viemClient' in options) {
-    return options.viemClient
+  if ('chainId' in options && options.chainId) {
+    const viemChain = Object.values(chains)?.find((chain) => chain.id === options.chainId)
+    const rpcUrls = options.rpcUrl
+      ? { default: { http: [options.rpcUrl] }, public: { http: [options.rpcUrl] } }
+      : viemChain?.rpcUrls
+    if (!rpcUrls) {
+      throw new Error(
+        `No rpcUrls found for chainId ${options.chainId}.  Please explicitly provide one`
+      )
+    }
+    return createPublicClient({
+      chain: {
+        id: options.chainId,
+        name: viemChain?.name ?? 'op-chain',
+        nativeCurrency:
+          options.nativeCurrency ??
+          viemChain?.nativeCurrency ??
+          chains.optimism.nativeCurrency,
+        network: viemChain?.network ?? 'Unknown OP Chain',
+        rpcUrls,
+        explorers:
+          (viemChain as typeof chains.optimism)?.blockExplorers ??
+          chains.optimism.blockExplorers,
+      },
+      transport: http(options.rpcUrl ?? chains[options.chainId].rpcUrls.public.http[0]),
+    })
   }
-
-  const viemChain = Object.values(chains)?.find((chain) => chain.id === options.chainId)
-  const rpcUrls = options.rpcUrl
-    ? { default: { http: [options.rpcUrl] }, public: { http: [options.rpcUrl] } }
-    : viemChain?.rpcUrls
-  if (!rpcUrls) {
-    throw new Error(
-      `No rpcUrls found for chainId ${options.chainId}.  Please explicitly provide one`
-    )
-  }
-  return createPublicClient({
-    chain: {
-      id: options.chainId,
-      name: viemChain?.name ?? 'op-chain',
-      nativeCurrency:
-        options.nativeCurrency ??
-        viemChain?.nativeCurrency ??
-        chains.optimism.nativeCurrency,
-      network: viemChain?.network ?? 'Unknown OP Chain',
-      rpcUrls,
-      explorers:
-        (viemChain as typeof chains.optimism)?.blockExplorers ??
-        chains.optimism.blockExplorers,
-    },
-    transport: http(options.rpcUrl ?? chains[options.chainId].rpcUrls.public.http[0]),
-  })
+  return options as PublicClient
 }
 
 /**
@@ -128,9 +133,9 @@ export const getGasPriceOracleContract = (params: ClientOptions) => {
  * const baseFeeValue = await baseFee(params);
  */
 export const baseFee = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.baseFee(params)
 }
 
@@ -140,9 +145,9 @@ export const baseFee = async (
  * const decimalsValue = await decimals(params);
  */
 export const decimals = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.decimals(params)
 }
 
@@ -152,9 +157,9 @@ export const decimals = async (
  * const gasPriceValue = await gasPrice(params);
  */
 export const gasPrice = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.gasPrice(params)
 }
 
@@ -166,9 +171,9 @@ export const gasPrice = async (
  */
 export const getL1Fee = async (
   data: Bytes,
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.getL1Fee([data], params)
 }
 
@@ -184,9 +189,9 @@ export const getL1GasUsed = async (
   /**
    * Optional lock options and provider options
    */
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.getL1GasUsed([data], params)
 }
 
@@ -196,9 +201,9 @@ export const getL1GasUsed = async (
  * const L1BaseFeeValue = await l1BaseFee(params);
  */
 export const l1BaseFee = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.l1BaseFee(params)
 }
 
@@ -208,9 +213,9 @@ export const l1BaseFee = async (
  * const overheadValue = await overhead(params);
  */
 export const overhead = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.overhead(params)
 }
 
@@ -220,9 +225,9 @@ export const overhead = async (
  * const scalarValue = await scalar(params);
  */
 export const scalar = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<bigint> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.scalar(params)
 }
 
@@ -232,9 +237,9 @@ export const scalar = async (
  * const versionValue = await version(params);
  */
 export const version = async (
-  params: GasPriceOracleOptions
+  { client, ...params }: GasPriceOracleOptions
 ): Promise<string> => {
-  const contract = getGasPriceOracleContract(params)
+  const contract = getGasPriceOracleContract(client)
   return contract.read.version(params)
 }
 
@@ -253,7 +258,7 @@ export type EstimateFeeParams = {
 /**
  * Estimates gas for an L2 transaction including the l1 fee
  */
-export const estimateFees = async ({ blockNumber, data, account, to, gas, nonce, value, blockTag, gasPrice, accessList, maxFeePerGas, maxPriorityFeePerGas, ...clientOptions }: EstimateFeeParams) => {
+export const estimateFees = async ({ blockNumber, data, account, to, gas, nonce, value, blockTag, gasPrice, accessList, maxFeePerGas, maxPriorityFeePerGas, client: clientOptions }: EstimateFeeParams) => {
   const client = getL2Client(clientOptions)
   const [l2Fee, l1Fee] = await Promise.all([
     client.estimateGas({
@@ -272,6 +277,7 @@ export const estimateFees = async ({ blockNumber, data, account, to, gas, nonce,
       maxPriorityFeePerGas,
     }),
     getL1Fee(data, {
+      client,
       blockNumber,
       ...clientOptions,
     }),
