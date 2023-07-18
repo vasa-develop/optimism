@@ -120,7 +120,7 @@ export const getL2Client = (options: ClientOptions): PublicClient => {
   if ('chainId' in options && options.chainId) {
     const viemChain = Object.values(chains)?.find((chain) => chain.id === options.chainId)
     const rpcUrls = options.rpcUrl
-      ? { default: { http: [options.rpcUrl] }, public: { http: [options.rpcUrl] } }
+      ? { default: { http: [options.rpcUrl] } }
       : viemChain?.rpcUrls
     if (!rpcUrls) {
       throw new Error(
