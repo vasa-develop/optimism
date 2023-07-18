@@ -14,7 +14,7 @@ import {
   EncodeFunctionDataParameters,
   TransactionSerializableEIP1559,
   TransactionSerializedEIP1559,
-  stringify
+  stringify,
 } from 'viem'
 import * as chains from 'viem/chains'
 import { PublicClient } from 'wagmi'
@@ -53,15 +53,15 @@ const knownChains = [chains.optimism.id, chains.goerli.id, chains.baseGoerli.id]
 type ClientOptions =
   // for known chains like base don't require an rpcUrl
   | {
-    chainId: (typeof knownChains)[number]
-    rpcUrl?: string
-    nativeCurrency?: chains.Chain['nativeCurrency']
-  }
+      chainId: typeof knownChains[number]
+      rpcUrl?: string
+      nativeCurrency?: chains.Chain['nativeCurrency']
+    }
   | {
-    chainId: number
-    rpcUrl: string
-    nativeCurrency?: chains.Chain['nativeCurrency']
-  }
+      chainId: number
+      rpcUrl: string
+      nativeCurrency?: chains.Chain['nativeCurrency']
+    }
   | PublicClient
 
 /**
@@ -72,14 +72,21 @@ export type GasPriceOracleOptions = BlockOptions & { client: ClientOptions }
 /**
  * Options for specifying the transaction being estimated
  */
-export type OracleTransactionParameters<TAbi extends Abi | readonly unknown[], TFunctionName extends string | undefined = undefined> = EncodeFunctionDataParameters<TAbi, TFunctionName> & Omit<TransactionSerializableEIP1559, 'data' | 'type'>
+export type OracleTransactionParameters<
+  TAbi extends Abi | readonly unknown[],
+  TFunctionName extends string | undefined = undefined
+> = EncodeFunctionDataParameters<TAbi, TFunctionName> &
+  Omit<TransactionSerializableEIP1559, 'data' | 'type'>
 /**
  * Options for specifying the transaction being estimated
  */
 export type GasPriceOracleEstimator = <
   TAbi extends Abi | readonly unknown[],
-  TFunctionName extends string | undefined = undefined,
->(options: OracleTransactionParameters<TAbi, TFunctionName> & GasPriceOracleOptions) => Promise<bigint>
+  TFunctionName extends string | undefined = undefined
+>(
+  options: OracleTransactionParameters<TAbi, TFunctionName> &
+    GasPriceOracleOptions
+) => Promise<bigint>
 
 /**
  * Throws an error if fetch is not defined
@@ -98,13 +105,16 @@ const validateFetch = (): void => {
  */
 const transactionSerializer = <
   TAbi extends Abi | readonly unknown[],
-  TFunctionName extends string | undefined = undefined,
->(options: EncodeFunctionDataParameters<TAbi, TFunctionName> & Omit<TransactionSerializableEIP1559, 'data'>): TransactionSerializedEIP1559 => {
+  TFunctionName extends string | undefined = undefined
+>(
+  options: EncodeFunctionDataParameters<TAbi, TFunctionName> &
+    Omit<TransactionSerializableEIP1559, 'data'>
+): TransactionSerializedEIP1559 => {
   const encodedFunctionData = encodeFunctionData(options)
   const serializedTransaction = serializeTransaction({
     ...options,
     data: encodedFunctionData,
-    type: 'eip1559'
+    type: 'eip1559',
   })
   return serializedTransaction as TransactionSerializedEIP1559
 }
@@ -118,7 +128,9 @@ export const getL2Client = (options: ClientOptions): PublicClient => {
   validateFetch()
 
   if ('chainId' in options && options.chainId) {
-    const viemChain = Object.values(chains)?.find((chain) => chain.id === options.chainId)
+    const viemChain = Object.values(chains)?.find(
+      (chain) => chain.id === options.chainId
+    )
     const rpcUrls = options.rpcUrl
       ? { default: { http: [options.rpcUrl] } }
       : viemChain?.rpcUrls
@@ -141,7 +153,9 @@ export const getL2Client = (options: ClientOptions): PublicClient => {
           (viemChain as typeof chains.optimism)?.blockExplorers ??
           chains.optimism.blockExplorers,
       },
-      transport: http(options.rpcUrl ?? chains[options.chainId].rpcUrls.public.http[0]),
+      transport: http(
+        options.rpcUrl ?? chains[options.chainId].rpcUrls.public.http[0]
+      ),
     })
   }
   return options as PublicClient
@@ -164,9 +178,11 @@ export const getGasPriceOracleContract = (params: ClientOptions) => {
  * @example
  * const baseFeeValue = await baseFee(params);
  */
-export const baseFee = async (
-  { client, blockNumber, blockTag }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const baseFee = async ({
+  client,
+  blockNumber,
+  blockTag,
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.baseFee({ blockNumber, blockTag })
 }
@@ -176,9 +192,11 @@ export const baseFee = async (
  * @example
  * const decimalsValue = await decimals(params);
  */
-export const decimals = async (
-  { client, blockNumber, blockTag }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const decimals = async ({
+  client,
+  blockNumber,
+  blockTag,
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.decimals({ blockNumber, blockTag })
 }
@@ -188,9 +206,11 @@ export const decimals = async (
  * @example
  * const gasPriceValue = await gasPrice(params);
  */
-export const gasPrice = async (
-  { client, blockNumber, blockTag }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const gasPrice = async ({
+  client,
+  blockNumber,
+  blockTag,
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.gasPrice({ blockNumber, blockTag })
 }
@@ -201,9 +221,7 @@ export const gasPrice = async (
  * @example
  * const L1FeeValue = await getL1Fee(data, params);
  */
-export const getL1Fee: GasPriceOracleEstimator = async (
-  options
-) => {
+export const getL1Fee: GasPriceOracleEstimator = async (options) => {
   const data = transactionSerializer(options)
   const contract = getGasPriceOracleContract(options.client)
   return contract.read.getL1Fee([data], {
@@ -216,9 +234,7 @@ export const getL1Fee: GasPriceOracleEstimator = async (
  * Returns the L1 gas used
  * @example
  */
-export const getL1GasUsed: GasPriceOracleEstimator = async (
-  options
-) => {
+export const getL1GasUsed: GasPriceOracleEstimator = async (options) => {
   const data = transactionSerializer(options)
   const contract = getGasPriceOracleContract(options.client)
   return contract.read.getL1GasUsed([data], {
@@ -232,9 +248,11 @@ export const getL1GasUsed: GasPriceOracleEstimator = async (
  * @example
  * const L1BaseFeeValue = await l1BaseFee(params);
  */
-export const l1BaseFee = async (
-  { client, blockNumber, blockTag }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const l1BaseFee = async ({
+  client,
+  blockNumber,
+  blockTag,
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.l1BaseFee({ blockNumber, blockTag })
 }
@@ -244,9 +262,11 @@ export const l1BaseFee = async (
  * @example
  * const overheadValue = await overhead(params);
  */
-export const overhead = async (
-  { client, blockNumber, blockTag }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const overhead = async ({
+  client,
+  blockNumber,
+  blockTag,
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.overhead({ blockNumber, blockTag })
 }
@@ -256,9 +276,10 @@ export const overhead = async (
  * @example
  * const scalarValue = await scalar(params);
  */
-export const scalar = async (
-  { client, ...params }: GasPriceOracleOptions
-): Promise<bigint> => {
+export const scalar = async ({
+  client,
+  ...params
+}: GasPriceOracleOptions): Promise<bigint> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.scalar(params)
 }
@@ -268,9 +289,10 @@ export const scalar = async (
  * @example
  * const versionValue = await version(params);
  */
-export const version = async (
-  { client, ...params }: GasPriceOracleOptions
-): Promise<string> => {
+export const version = async ({
+  client,
+  ...params
+}: GasPriceOracleOptions): Promise<string> => {
   const contract = getGasPriceOracleContract(client)
   return contract.read.version(params)
 }
@@ -289,8 +311,12 @@ export type EstimateFeeParams = {
 
 export type EstimateFees = <
   TAbi extends Abi | readonly unknown[],
-  TFunctionName extends string | undefined = undefined,
->(options: OracleTransactionParameters<TAbi, TFunctionName> & GasPriceOracleOptions & Omit<EstimateGasParameters, 'data'>) => Promise<bigint>
+  TFunctionName extends string | undefined = undefined
+>(
+  options: OracleTransactionParameters<TAbi, TFunctionName> &
+    GasPriceOracleOptions &
+    Omit<EstimateGasParameters, 'data'>
+) => Promise<bigint>
 /**
  * Estimates gas for an L2 transaction including the l1 fee
  */
@@ -301,17 +327,22 @@ export const estimateFees: EstimateFees = async (options) => {
     args: options.args,
     functionName: options.functionName,
   } as EncodeFunctionDataParameters)
-  writeFileSync('./repro', stringify(
-    {
-      to: options.to,
-      account: options.account,
-      accessList: options.accessList,
-      blockNumber: options.blockNumber,
-      blockTag: options.blockTag,
-      data: encodedFunctionData,
-      value: options.value,
-    } as EstimateGasParameters<typeof chains.optimism>, null, 2
-  ))
+  writeFileSync(
+    './repro',
+    stringify(
+      {
+        to: options.to,
+        account: options.account,
+        accessList: options.accessList,
+        blockNumber: options.blockNumber,
+        blockTag: options.blockTag,
+        data: encodedFunctionData,
+        value: options.value,
+      } as EstimateGasParameters<typeof chains.optimism>,
+      null,
+      2
+    )
+  )
   const [l1Fee, l2Fee] = await Promise.all([
     getL1Fee({
       ...options,

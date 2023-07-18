@@ -1,4 +1,4 @@
-# @eth-optimism/fee-estimation 
+# @eth-optimism/fee-estimation
 
 ## Overview
 
@@ -35,7 +35,7 @@ yarn add @eth-optimism/fee-estimation
 ### Import the package
 
 ```ts
-import { estimateFees } from '@eth-optimism/fee-estimation';
+import { estimateFees } from '@eth-optimism/fee-estimation'
 ```
 
 ### Basic Usage
@@ -49,8 +49,8 @@ const fees = await estimateFees({
   blockNumber: BigInt(106889079),
   account: '0xe371815c5f8a4f9acd1576879de288acd81269f1',
   to: '0xe35f24470730f5a488da9721548c1ab0b65b53d5',
-  data: "0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1",
-});
+  data: '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1',
+})
 ```
 
 ## API
@@ -88,14 +88,14 @@ A Promise that resolves to a BigInt representing the estimated fee in wei.
 You can use our package to encode the function data. Here is an example:
 
 ```ts
-import { encodeFunctionData } from '@eth-optimism/fee-estimation';
-import { optimistABI } from '@eth-optimism/contracts-ts';
+import { encodeFunctionData } from '@eth-optimism/fee-estimation'
+import { optimistABI } from '@eth-optimism/contracts-ts'
 
 const data = encodeFunctionData({
   functionName: 'burn',
   abi: optimistABI,
   args: [BigInt('0x77194aa25a06f932c10c0f25090f3046af2c85a6')],
-});
+})
 ```
 
 This will return a 0x-prefixed hex string that represents the encoded function data.
@@ -117,9 +117,11 @@ getL2Client(options: ClientOptions): PublicClient;
 ```
 
 #### Parameters
+
 - `options: ClientOptions` - The options required to initialize the L2 client.
 
 #### Returns
+
 - `PublicClient` - Returns a public client that can interact with the L2 network.
 
 #### Example
@@ -128,9 +130,9 @@ getL2Client(options: ClientOptions): PublicClient;
 const clientParams = {
   chainId: 10,
   rpcUrl: process.env.VITE_L2_RPC_URL ?? 'https://mainnet.optimism.io',
-} as const;
+} as const
 
-const client = getL2Client(clientParams);
+const client = getL2Client(clientParams)
 ```
 
 ---
@@ -144,20 +146,22 @@ baseFee({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - The options required to fetch the base fee.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the base fee.
 
 #### Example
 
 ```ts
-const blockNumber = BigInt(106889079);
+const blockNumber = BigInt(106889079)
 const paramsWithClient = {
   client: clientParams,
-  blockNumber
-};
-const baseFeeValue = await baseFee(paramsWithClient);
+  blockNumber,
+}
+const baseFeeValue = await baseFee(paramsWithClient)
 ```
 
 ---
@@ -171,15 +175,17 @@ decimals({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - The options required to fetch the decimals.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the decimals used in the scalar.
 
 #### Example
 
 ```ts
-const decimalsValue = await decimals(paramsWithClient);
+const decimalsValue = await decimals(paramsWithClient)
 ```
 
 ---
@@ -193,15 +199,17 @@ gasPrice({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - The options required to fetch the gas price.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the gas price.
 
 #### Example
 
 ```ts
-const gasPriceValue = await gasPrice(paramsWithClient);
+const gasPriceValue = await gasPrice(paramsWithClient)
 ```
 
 ---
@@ -215,17 +223,20 @@ getL1Fee(data: Bytes, { client, ...params }: GasPriceOracleOptions): Promise<big
 ```
 
 #### Parameters
+
 - `data: Bytes` - The transaction call data as a 0x-prefixed hex string.
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the L1 portion of the fee.
 
 #### Example
 
 ```ts
-const data = '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1';
-const l1FeeValue = await getL1Fee(data, paramsWithClient);
+const data =
+  '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1'
+const l1FeeValue = await getL1Fee(data, paramsWithClient)
 ```
 
 ### getL1GasUsed()
@@ -237,17 +248,20 @@ getL1GasUsed(data: Bytes, { client, ...params }: GasPriceOracleOptions): Promise
 ```
 
 #### Parameters
+
 - `data: Bytes` - The transaction call data as a 0x-prefixed hex string.
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the amount of gas used on the L1 network for the given transaction.
 
 #### Example
 
 ```ts
-const data = '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1';
-const l1GasUsed = await getL1GasUsed(data, paramsWithClient);
+const data =
+  '0x5c19a95c00000000000000000000000046abfe1c972fca43766d6ad70e1c1df72f4bb4d1'
+const l1GasUsed = await getL1GasUsed(data, paramsWithClient)
 ```
 
 ---
@@ -261,15 +275,17 @@ l1BaseFee({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the base fee on the L1 network.
 
 #### Example
 
 ```ts
-const l1BaseFeeValue = await l1BaseFee(paramsWithClient);
+const l1BaseFeeValue = await l1BaseFee(paramsWithClient)
 ```
 
 ---
@@ -283,15 +299,17 @@ overhead({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the overhead for the given transaction.
 
 #### Example
 
 ```ts
-const overheadValue = await overhead(paramsWithClient);
+const overheadValue = await overhead(paramsWithClient)
 ```
 
 ---
@@ -305,15 +323,17 @@ scalar({ client, ...params }: GasPriceOracleOptions): Promise<bigint>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the scalar value for the gas estimation.
 
 #### Example
 
 ```ts
-const scalarValue = await scalar(paramsWithClient);
+const scalarValue = await scalar(paramsWithClient)
 ```
 
 ---
@@ -327,15 +347,17 @@ version({ client, ...params }: GasPriceOracleOptions): Promise<string>;
 ```
 
 #### Parameters
+
 - `{ client, ...params }: GasPriceOracleOptions` - Optional lock options and provider options.
 
 #### Returns
+
 - `Promise<string>` - Returns a promise that resolves to the version of the fee estimation library.
 
 #### Example
 
 ```ts
-const libraryVersion = await version(paramsWithClient);
+const libraryVersion = await version(paramsWithClient)
 ```
 
 ---
@@ -349,9 +371,11 @@ encodeFunctionData({ functionName, abi, args }: EncodeFunctionDataParams): strin
 ```
 
 #### Parameters
+
 - `{ functionName, abi, args }: EncodeFunctionDataParams` - An object containing the function name, ABI (Application Binary Interface), and arguments.
 
 #### Returns
+
 - `string` - Returns the encoded function data as a string.
 
 #### Example
@@ -361,7 +385,7 @@ const encodedData = encodeFunctionData({
   functionName: 'burn',
   abi: optimistABI,
   args: [BigInt(optimistOwnerAddress)],
-});
+})
 ```
 
 ---
@@ -375,9 +399,11 @@ estimateFees({ client, data, account, to, blockNumber }: EstimateFeesParams): Pr
 ```
 
 #### Parameters
+
 - `{ client, data, account, to, blockNumber }: EstimateFeesParams` - An object containing the client, transaction data, sender's address, recipient's address, and block number.
 
 #### Returns
+
 - `Promise<bigint>` - Returns a promise that resolves to the estimated fee for the given transaction.
 
 #### Example
@@ -387,8 +413,11 @@ const estimateFeesParams = {
   data: '0xd1e16f0a603acf1f8150e020434b096e408bafa429a7134fbdad2ae82a9b2b882bfcf5fe174162cf4b3d5f2ab46ff6433792fc99885d55ce0972d982583cc1e11b64b1d8d50121c0497642000000000000000000000000000000000000060a2c8052ed420000000000000000000000000000000000004234002c8052edba12222222228d8ba445958a75a0704d566bf2c84200000000000000000000000000000000000006420000000000000000000000000000000000004239965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003',
   account: '0xe371815c5f8a4f9acd1576879de288acd81269f1',
   to: '0xe35f24470730f5a488da9721548c1ab0b65b53d5',
-};
-const estimatedFees = await estimateFees({ ...paramsWithClient, ...estimateFeesParams });
+}
+const estimatedFees = await estimateFees({
+  ...paramsWithClient,
+  ...estimateFeesParams,
+})
 ```
 
 I hope this information is helpful!
