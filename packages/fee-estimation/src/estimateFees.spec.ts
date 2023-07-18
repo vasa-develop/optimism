@@ -60,7 +60,7 @@ test('estimateFees should return correct fees', async () => {
   expect(formatEther(res)).toMatchInlineSnapshot('"0.000033237088573005"')
 })
 
-test('users should be able to generate data using the client', async () => {
+test('users should be able to generate data using encodeFunctionData', async () => {
   // using this optimist https://optimistic.etherscan.io/tx/0xaa291efba7ea40b0742e5ff84a1e7831a2eb6c2fc35001fa03ba80fd3b609dc9
   const blockNumber = BigInt(107028270)
   const optimistOwnerAddress = "0x77194aa25a06f932c10c0f25090f3046af2c85a6" as const
