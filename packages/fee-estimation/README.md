@@ -1,4 +1,4 @@
-# @eth-optiism/fee-estimation 
+# @eth-optimism/fee-estimation 
 
 ## Overview
 
