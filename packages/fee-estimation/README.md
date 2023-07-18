@@ -42,7 +42,7 @@ import {
   overhead,
   scalar,
   version,
-} from '@eth-optimism/fee-estimator'
+} from '@eth-optimism/fee-estimation'
 ```
 
 ## Usage
