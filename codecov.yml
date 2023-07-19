@@ -35,6 +35,5 @@ flag_management:
     - name: core-utils-tests
     - name: dtl-tests
     - name: chain-mon-tests
-    - name: fault-detector-tests
     - name: replica-healthcheck-tests
     - name: sdk-tests
