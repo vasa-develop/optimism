@@ -39,7 +39,7 @@ type BlockOptions = {
   blockTag?: BlockTag
 }
 
-const knownChains = [chains.optimism.id, chains.goerli.id, chains.baseGoerli.id]
+const knownChains = [chains.optimism.id, chains.goerli.id, chains.base, chains.baseGoerli.id, chains.zora, chains.zoraTestnet]
 
 /**
  * ClientOptions type
