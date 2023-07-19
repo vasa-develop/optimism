@@ -14,12 +14,10 @@ import {
   EncodeFunctionDataParameters,
   TransactionSerializableEIP1559,
   TransactionSerializedEIP1559,
-  stringify,
+  PublicClient,
 } from 'viem'
 import * as chains from 'viem/chains'
-import { PublicClient } from 'wagmi'
 import { Abi } from 'abitype'
-import { writeFileSync } from 'fs'
 
 /**
  * Bytes type representing a hex string with a 0x prefix
@@ -53,15 +51,15 @@ const knownChains = [chains.optimism.id, chains.goerli.id, chains.baseGoerli.id]
 type ClientOptions =
   // for known chains like base don't require an rpcUrl
   | {
-      chainId: typeof knownChains[number]
-      rpcUrl?: string
-      nativeCurrency?: chains.Chain['nativeCurrency']
-    }
+    chainId: typeof knownChains[number]
+    rpcUrl?: string
+    nativeCurrency?: chains.Chain['nativeCurrency']
+  }
   | {
-      chainId: number
-      rpcUrl: string
-      nativeCurrency?: chains.Chain['nativeCurrency']
-    }
+    chainId: number
+    rpcUrl: string
+    nativeCurrency?: chains.Chain['nativeCurrency']
+  }
   | PublicClient
 
 /**
@@ -327,22 +325,6 @@ export const estimateFees: EstimateFees = async (options) => {
     args: options.args,
     functionName: options.functionName,
   } as EncodeFunctionDataParameters)
-  writeFileSync(
-    './repro',
-    stringify(
-      {
-        to: options.to,
-        account: options.account,
-        accessList: options.accessList,
-        blockNumber: options.blockNumber,
-        blockTag: options.blockTag,
-        data: encodedFunctionData,
-        value: options.value,
-      } as EstimateGasParameters<typeof chains.optimism>,
-      null,
-      2
-    )
-  )
   const [l1Fee, l2Fee] = await Promise.all([
     getL1Fee({
       ...options,
