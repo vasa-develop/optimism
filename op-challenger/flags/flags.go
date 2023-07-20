@@ -7,9 +7,6 @@ import (
 
 	opservice "github.com/ethereum-optimism/optimism/op-service"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
-	opmetrics "github.com/ethereum-optimism/optimism/op-service/metrics"
-	oppprof "github.com/ethereum-optimism/optimism/op-service/pprof"
-	oprpc "github.com/ethereum-optimism/optimism/op-service/rpc"
 	txmgr "github.com/ethereum-optimism/optimism/op-service/txmgr"
 )
 
@@ -36,6 +33,16 @@ var (
 		Usage:   "Alphabet Trace (temporary)",
 		EnvVars: prefixEnvVars("ALPHABET"),
 	}
+	AgreeWithProposedOutputFlag = &cli.BoolFlag{
+		Name:    "agree-with-proposed-output",
+		Usage:   "Temporary hardcoded flag if we agree or disagree with the proposed output.",
+		EnvVars: prefixEnvVars("AGREE_WITH_PROPOSED_OUTPUT"),
+	}
+	GameDepthFlag = &cli.IntFlag{
+		Name:    "game-depth",
+		Usage:   "Depth of the game tree.",
+		EnvVars: prefixEnvVars("GAME_DEPTH"),
+	}
 	// Optional Flags
 )
 
@@ -44,16 +51,15 @@ var requiredFlags = []cli.Flag{
 	L1EthRpcFlag,
 	DGFAddressFlag,
 	AlphabetFlag,
+	AgreeWithProposedOutputFlag,
+	GameDepthFlag,
 }
 
 // optionalFlags is a list of unchecked cli flags
 var optionalFlags = []cli.Flag{}
 
 func init() {
-	optionalFlags = append(optionalFlags, oprpc.CLIFlags(envVarPrefix)...)
 	optionalFlags = append(optionalFlags, oplog.CLIFlags(envVarPrefix)...)
-	optionalFlags = append(optionalFlags, opmetrics.CLIFlags(envVarPrefix)...)
-	optionalFlags = append(optionalFlags, oppprof.CLIFlags(envVarPrefix)...)
 	optionalFlags = append(optionalFlags, txmgr.CLIFlags(envVarPrefix)...)
 
 	Flags = append(requiredFlags, optionalFlags...)

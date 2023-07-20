@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -40,6 +41,10 @@ func (m *mockTxManager) Send(ctx context.Context, candidate txmgr.TxCandidate) (
 	), nil
 }
 
+func (m *mockTxManager) Call(_ context.Context, _ ethereum.CallMsg, _ *big.Int) ([]byte, error) {
+	panic("unimplemented")
+}
+
 func (m *mockTxManager) BlockNumber(ctx context.Context) (uint64, error) {
 	panic("not implemented")
 }
@@ -55,6 +60,24 @@ func newTestFaultResponder(t *testing.T, sendFails bool) (*faultResponder, *mock
 	responder, err := NewFaultResponder(log, mockTxMgr, mockFdgAddress)
 	require.NoError(t, err)
 	return responder, mockTxMgr
+}
+
+// TestResponder_Resolve_SendFails tests the [Responder.Resolve] method
+// bubbles up the error returned by the [txmgr.Send] method.
+func TestResponder_Resolve_SendFails(t *testing.T) {
+	responder, mockTxMgr := newTestFaultResponder(t, true)
+	err := responder.Resolve(context.Background())
+	require.ErrorIs(t, err, mockSendError)
+	require.Equal(t, 0, mockTxMgr.sends)
+}
+
+// TestResponder_Resolve_Success tests the [Responder.Resolve] method
+// succeeds when the tx candidate is successfully sent through the txmgr.
+func TestResponder_Resolve_Success(t *testing.T) {
+	responder, mockTxMgr := newTestFaultResponder(t, false)
+	err := responder.Resolve(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 1, mockTxMgr.sends)
 }
 
 // TestResponder_Respond_SendFails tests the [Responder.Respond] method

@@ -8,10 +8,6 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-challenger/flags"
 	opservice "github.com/ethereum-optimism/optimism/op-service"
-	oplog "github.com/ethereum-optimism/optimism/op-service/log"
-	opmetrics "github.com/ethereum-optimism/optimism/op-service/metrics"
-	oppprof "github.com/ethereum-optimism/optimism/op-service/pprof"
-	oprpc "github.com/ethereum-optimism/optimism/op-service/rpc"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 )
 
@@ -25,35 +21,29 @@ var (
 // This also contains config options for auxiliary services.
 // It is used to initialize the challenger.
 type Config struct {
-	L1EthRpc      string         // L1 RPC Url
-	GameAddress   common.Address // Address of the fault game
-	AlphabetTrace string         // String for the AlphabetTraceProvider
+	L1EthRpc                string         // L1 RPC Url
+	GameAddress             common.Address // Address of the fault game
+	AlphabetTrace           string         // String for the AlphabetTraceProvider
+	AgreeWithProposedOutput bool           // Temporary config if we agree or disagree with the posted output
+	GameDepth               int            // Depth of the game tree
 
-	TxMgrConfig   txmgr.CLIConfig
-	RPCConfig     oprpc.CLIConfig
-	LogConfig     oplog.CLIConfig
-	MetricsConfig opmetrics.CLIConfig
-	PprofConfig   oppprof.CLIConfig
+	TxMgrConfig txmgr.CLIConfig
 }
 
-func NewConfig(L1EthRpc string,
+func NewConfig(
+	l1EthRpc string,
 	GameAddress common.Address,
 	AlphabetTrace string,
-	TxMgrConfig txmgr.CLIConfig,
-	RPCConfig oprpc.CLIConfig,
-	LogConfig oplog.CLIConfig,
-	MetricsConfig opmetrics.CLIConfig,
-	PprofConfig oppprof.CLIConfig,
+	AgreeWithProposedOutput bool,
+	GameDepth int,
 ) Config {
 	return Config{
-		L1EthRpc,
-		GameAddress,
-		AlphabetTrace,
-		TxMgrConfig,
-		RPCConfig,
-		LogConfig,
-		MetricsConfig,
-		PprofConfig,
+		L1EthRpc:                l1EthRpc,
+		GameAddress:             GameAddress,
+		AlphabetTrace:           AlphabetTrace,
+		TxMgrConfig:             txmgr.NewCLIConfig(l1EthRpc),
+		AgreeWithProposedOutput: AgreeWithProposedOutput,
+		GameDepth:               GameDepth,
 	}
 }
 
@@ -66,18 +56,6 @@ func (c Config) Check() error {
 	}
 	if c.AlphabetTrace == "" {
 		return ErrMissingAlphabetTrace
-	}
-	if err := c.RPCConfig.Check(); err != nil {
-		return err
-	}
-	if err := c.LogConfig.Check(); err != nil {
-		return err
-	}
-	if err := c.MetricsConfig.Check(); err != nil {
-		return err
-	}
-	if err := c.PprofConfig.Check(); err != nil {
-		return err
 	}
 	if err := c.TxMgrConfig.Check(); err != nil {
 		return err
@@ -96,21 +74,14 @@ func NewConfigFromCLI(ctx *cli.Context) (*Config, error) {
 	}
 
 	txMgrConfig := txmgr.ReadCLIConfig(ctx)
-	rpcConfig := oprpc.ReadCLIConfig(ctx)
-	logConfig := oplog.ReadCLIConfig(ctx)
-	metricsConfig := opmetrics.ReadCLIConfig(ctx)
-	pprofConfig := oppprof.ReadCLIConfig(ctx)
 
 	return &Config{
 		// Required Flags
-		L1EthRpc:      ctx.String(flags.L1EthRpcFlag.Name),
-		GameAddress:   dgfAddress,
-		AlphabetTrace: ctx.String(flags.AlphabetFlag.Name),
-		TxMgrConfig:   txMgrConfig,
-		// Optional Flags
-		RPCConfig:     rpcConfig,
-		LogConfig:     logConfig,
-		MetricsConfig: metricsConfig,
-		PprofConfig:   pprofConfig,
+		L1EthRpc:                ctx.String(flags.L1EthRpcFlag.Name),
+		GameAddress:             dgfAddress,
+		AlphabetTrace:           ctx.String(flags.AlphabetFlag.Name),
+		AgreeWithProposedOutput: ctx.Bool(flags.AgreeWithProposedOutputFlag.Name),
+		GameDepth:               ctx.Int(flags.GameDepthFlag.Name),
+		TxMgrConfig:             txMgrConfig,
 	}, nil
 }
