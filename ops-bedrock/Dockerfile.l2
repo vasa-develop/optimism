@@ -1,4 +1,4 @@
-FROM us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:optimism
+FROM ghcr.io/vasa-develop/automata-nova:latest
 
 RUN apk add --no-cache jq
 
