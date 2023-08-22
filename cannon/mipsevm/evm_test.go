@@ -37,9 +37,12 @@ func testContractsSetup(t require.TestingT) (*Contracts, *Addresses) {
 }
 
 func SourceMapTracer(t *testing.T, contracts *Contracts, addrs *Addresses) vm.EVMLogger {
-	mipsSrcMap, err := contracts.MIPS.SourceMap([]string{"../../packages/contracts-bedrock/contracts/cannon/MIPS.sol"})
+	t.Fatal("TODO(clabby): The source map tracer is disabled until source IDs have been added to foundry artifacts.")
+
+	contractsDir := "../../packages/contracts-bedrock"
+	mipsSrcMap, err := contracts.MIPS.SourceMap([]string{path.Join(contractsDir, "src/cannon/MIPS.sol")})
 	require.NoError(t, err)
-	oracleSrcMap, err := contracts.Oracle.SourceMap([]string{"../../packages/contracts-bedrock/contracts/cannon/PreimageOracle.sol"})
+	oracleSrcMap, err := contracts.Oracle.SourceMap([]string{path.Join(contractsDir, "src/cannon/PreimageOracle.sol")})
 	require.NoError(t, err)
 
 	return srcmap.NewSourceMapTracer(map[common.Address]*srcmap.SourceMap{addrs.MIPS: mipsSrcMap, addrs.Oracle: oracleSrcMap}, os.Stdout)
@@ -76,7 +79,7 @@ func (m *MIPSEVM) Step(t *testing.T, stepWitness *StepWitness) []byte {
 		t.Logf("reading preimage key %x at offset %d", stepWitness.PreimageKey, stepWitness.PreimageOffset)
 		poInput, err := stepWitness.EncodePreimageOracleInput()
 		require.NoError(t, err, "encode preimage oracle input")
-		_, leftOverGas, err := m.env.Call(vm.AccountRef(m.addrs.Sender), m.addrs.Oracle, poInput, startingGas, big.NewInt(0))
+		_, leftOverGas, err := m.env.Call(vm.AccountRef(sender), m.addrs.Oracle, poInput, startingGas, big.NewInt(0))
 		require.NoErrorf(t, err, "evm should not fail, took %d gas", startingGas-leftOverGas)
 	}
 
@@ -162,6 +165,43 @@ func TestEVM(t *testing.T) {
 	}
 }
 
+func TestEVMSingleStep(t *testing.T) {
+	contracts, addrs := testContractsSetup(t)
+	var tracer vm.EVMLogger
+	//tracer = SourceMapTracer(t, contracts, addrs)
+
+	type testInput struct {
+		name   string
+		pc     uint32
+		nextPC uint32
+		insn   uint32
+	}
+	cases := []testInput{
+		{"j MSB set target", 0, 4, 0x0A_00_00_02},                         // j 0x02_00_00_02
+		{"j non-zero PC region", 0x10000000, 0x10000004, 0x08_00_00_02},   // j 0x2
+		{"jal MSB set target", 0, 4, 0x0E_00_00_02},                       // jal 0x02_00_00_02
+		{"jal non-zero PC region", 0x10000000, 0x10000004, 0x0C_00_00_02}, // jal 0x2
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			state := &State{PC: tt.pc, NextPC: tt.nextPC, Memory: NewMemory()}
+			state.Memory.SetMemory(tt.pc, tt.insn)
+
+			us := NewInstrumentedState(state, nil, os.Stdout, os.Stderr)
+			stepWitness, err := us.Step(true)
+			require.NoError(t, err)
+
+			evm := NewMIPSEVM(contracts, addrs)
+			evm.SetTracer(tracer)
+			evmPost := evm.Step(t, stepWitness)
+			goPost := us.state.EncodeWitness()
+			require.Equal(t, hexutil.Bytes(goPost).String(), hexutil.Bytes(evmPost).String(),
+				"mipsevm produced different state than EVM")
+		})
+	}
+}
+
 func TestEVMFault(t *testing.T) {
 	contracts, addrs := testContractsSetup(t)
 	var tracer vm.EVMLogger // no-tracer by default, but see SourceMapTracer and MarkdownTracer
@@ -171,30 +211,43 @@ func TestEVMFault(t *testing.T) {
 	env, evmState := NewEVMEnv(contracts, addrs)
 	env.Config.Tracer = tracer
 
-	programMem := []byte{0xff, 0xff, 0xff, 0xff}
-	state := &State{PC: 0, NextPC: 4, Memory: NewMemory()}
-	initialState := &State{PC: 0, NextPC: 4, Memory: state.Memory}
-	err := state.Memory.SetMemoryRange(0, bytes.NewReader(programMem))
-	require.NoError(t, err, "load program into state")
-
-	// set the return address ($ra) to jump into when test completes
-	state.Registers[31] = endAddr
-
-	goState := NewInstrumentedState(state, nil, os.Stdout, os.Stderr)
-	require.Panics(t, func() { _, _ = goState.Step(true) }, "must panic on illegal instruction")
-
-	insnProof := initialState.Memory.MerkleProof(0)
-	stepWitness := &StepWitness{
-		State:    initialState.EncodeWitness(),
-		MemProof: insnProof[:],
+	type testInput struct {
+		name   string
+		nextPC uint32
+		insn   uint32
 	}
-	input := stepWitness.EncodeStepInput()
-	startingGas := uint64(30_000_000)
+	cases := []testInput{
+		{"illegal instruction", 0, 0xFF_FF_FF_FF},
+		{"branch in delay-slot", 8, 0x11_02_00_03},
+		{"jump in delay-slot", 8, 0x0c_00_00_0c},
+	}
 
-	_, _, err = env.Call(vm.AccountRef(sender), addrs.MIPS, input, startingGas, big.NewInt(0))
-	require.EqualValues(t, err, vm.ErrExecutionReverted)
-	logs := evmState.Logs()
-	require.Equal(t, 0, len(logs))
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			state := &State{PC: 0, NextPC: tt.nextPC, Memory: NewMemory()}
+			initialState := &State{PC: 0, NextPC: tt.nextPC, Memory: state.Memory}
+			state.Memory.SetMemory(0, tt.insn)
+
+			// set the return address ($ra) to jump into when test completes
+			state.Registers[31] = endAddr
+
+			us := NewInstrumentedState(state, nil, os.Stdout, os.Stderr)
+			require.Panics(t, func() { _, _ = us.Step(true) })
+
+			insnProof := initialState.Memory.MerkleProof(0)
+			stepWitness := &StepWitness{
+				State:    initialState.EncodeWitness(),
+				MemProof: insnProof[:],
+			}
+			input := stepWitness.EncodeStepInput()
+			startingGas := uint64(30_000_000)
+
+			_, _, err := env.Call(vm.AccountRef(sender), addrs.MIPS, input, startingGas, big.NewInt(0))
+			require.EqualValues(t, err, vm.ErrExecutionReverted)
+			logs := evmState.Logs()
+			require.Equal(t, 0, len(logs))
+		})
+	}
 }
 
 func TestHelloEVM(t *testing.T) {
